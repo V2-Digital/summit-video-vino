@@ -1,28 +1,11 @@
-#!/usr/bin/env python3
-"""
- Copyright (C) 2018-2024 Intel Corporation
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
-"""
-
 import logging as log
 import sys
-from argparse import ArgumentParser, SUPPRESS
 from pathlib import Path
 from time import perf_counter
 
 import cv2
-import numpy as np
+from queue import Queue
+import threading
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'common/python'))
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'common/python/model_zoo'))
@@ -39,9 +22,9 @@ from visualizers import ColorPalette
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
+overlay_image = cv2.imread(str(Path(__file__).resolve().parents[0] / 'AI.png'), -1) 
 def draw_icon(frame, detections, output_transform):
     frame = output_transform.resize(frame)
-    overlay_image = cv2.imread(str(Path(__file__).resolve().parents[0] / 'AI.png'), -1)  # Load the PNG image with alpha channel
 
     for detection in detections:
         class_id = int(detection.id)
@@ -91,31 +74,6 @@ def overlay_with_alpha(background, overlay, position):
     # Replace the region in the original background with the modified region
     background[y1:y2, x1:x2] = background_region
 
-def draw_detections(frame, detections, palette, labels, output_transform):
-    frame = output_transform.resize(frame)
-    for detection in detections:
-        class_id = int(detection.id)
-        color = palette[class_id]
-        det_label = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
-        xmin, ymin, xmax, ymax = detection.get_coords()
-        xmin, ymin, xmax, ymax = output_transform.scale([xmin, ymin, xmax, ymax])
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
-        cv2.putText(frame, '{} {:.1%}'.format(det_label, detection.score),
-                    (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
-    return frame
-
-
-def print_raw_results(detections, labels, frame_id):
-    log.debug(' ------------------- Frame # {} ------------------ '.format(frame_id))
-    log.debug(' Class ID | Confidence | XMIN | YMIN | XMAX | YMAX ')
-    for detection in detections:
-        xmin, ymin, xmax, ymax = detection.get_coords()
-        class_id = int(detection.id)
-        det_label = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
-        log.debug('{:^9} | {:10f} | {:4} | {:4} | {:4} | {:4} '
-                  .format(det_label, detection.score, xmin, ymin, xmax, ymax))
-
-
 class PeopleCounter:
     def __init__(self, args):
         self.args = args
@@ -144,8 +102,21 @@ class PeopleCounter:
 
         self.detector_pipeline = AsyncPipeline(self.model)
         self.palette = ColorPalette(len(self.model.labels) if self.model.labels else 100)
-        # self.metrics = PerformanceMetrics()
-        # self.render_metrics = PerformanceMetrics()
+
+        self.frame_queue = Queue(maxsize=10)
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self.count)
+        self.thread.start()
+
+    def get_latest_frame(self):
+        try:
+            return self.frame_queue.get(timeout=0.1)  # Adjust the timeout as needed
+        except queue.Empty:
+            return None
+    
+    def stop(self):
+        self.stop_event.set()
+        self.thread.join()
 
     def count(self):
 
@@ -185,7 +156,7 @@ class PeopleCounter:
         presenter = None
         output_transform = None
 
-        while True:
+        while not self.stop_event.is_set():
             if detector_pipeline.callback_exceptions:
                 raise detector_pipeline.callback_exceptions[0]
             # Process all completed requests
@@ -207,11 +178,15 @@ class PeopleCounter:
 
                 next_frame_id_to_show += 1
 
-                yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+                if not self.frame_queue.full():
+                    self.frame_queue.put(bytearray(encodedImage))
+                    log.info('Frame #{} processed'.format(next_frame_id_to_show))
+                else:
+                    log.warning('Frame queue is full')
                 continue
 
             if detector_pipeline.is_ready():
-                # Get new image/frame
+                # Get new image/frame   
                 start_time = perf_counter()
                 frame = cap.read()
                 if frame is None:
@@ -236,6 +211,3 @@ class PeopleCounter:
         detector_pipeline.await_all()
         if detector_pipeline.callback_exceptions:
             raise detector_pipeline.callback_exceptions[0]
-
-# if __name__ == '__main__':
-#     sys.exit(main() or 0)
