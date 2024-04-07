@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;700;800;900" rel="stylesheet">
+    <title>Test</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,container-queries"></script>
+    <script>
+      tailwind.config = {
+        content: ["./public/index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+        theme: {
+          screens: {
+            xl: "1278px",
+            lg: "1000px",
+            md: "780px",
+            sm: "600px",
+            xs: "414px",
+          },
+          extend: {
+            fontSize: {
+              h1: [
+                "80px",
+                {
+                  lineHeight: "92px",
+                  fontWeight: 200,
+                },
+              ],
+              h2: [
+                "54px",
+                {
+                  lineHeight: "70px",
+                  weight: "700",
+                },
+              ],
+              h3: [
+                "50px",
+                {
+                  lineHeight: "64px",
+                  weight: "700",
+                },
+              ],
+              h4: [
+                "44px",
+                {
+                  lineHeight: "54px",
+                  weight: "700",
+                },
+              ],
+              h5: [
+                "40px",
+                {
+                  lineHeight: "50px",
+                  weight: "700",
+                },
+              ],
+              h6: [
+                "36px",
+                {
+                  lineHeight: "44px",
+                  weight: "700",
+                },
+              ],
+              h7: [
+                "34px",
+                {
+                  lineHeight: "40px",
+                  weight: "700",
+                },
+              ],
+              h8: [
+                "30px",
+                {
+                  lineHeight: "38px",
+                  weight: "700",
+                },
+              ],
+              "sub-title": [
+                "28px",
+                {
+                  lineHeight: "38px",
+                },
+              ],
+              body1: [
+                "22px",
+                {
+                  lineHeight: "30px",
+                },
+              ],
+              body2: [
+                "20px",
+                {
+                  lineHeight: "1.75rem",
+                  weight: 400,
+                },
+              ],
+              body3: [
+                "16px",
+                {
+                  lineHeight: "21px",
+                },
+              ],
+              body4: [
+                "14px",
+                {
+                  lineHeight: "18px",
+                },
+              ],
+              field: [
+                "24px",
+                {
+                  lineHeight: "30px",
+                },
+              ],
+              ctaLarge: [
+                "40px",
+                {
+                  lineHeight: "52px",
+                  fontWeight: 300,
+                },
+              ],
+              ctaSmall: [
+                "36px",
+                {
+                  lineHeight: "44px",
+                  fontWeight: 300,
+                },
+              ],
+            },
+            fontFamily: {
+              sans: '"Outfit", sans-serif',
+            },
+            colors: {
+              bgRed: "#F1325F",
+              bgOrange: "#EC672C",
+              gold: "#FEC40E",
+              cream: "#FFF3CF",
+              bgBlue: "#38C2FF",
+              lightgrey: "#EBEBEB",
+              secondaryGray: "#7f7f7f",
+              lightblue: "#dcf3fd",
+            },
+            aspectRatio: {
+              "blog-post": "2/1",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="flex flex-col min-h-screen">
+    <!--
+      (tailwindcss)
+      Header
+      Full height content, with 2 columns
+      Footer Chiron
+   -->
+    <header class="py-12">
+      <div class="mx-auto flex justify-around align-middle">
+        <div class="flex space-x-6">
+           <svg
+             width="85.33333333333333"
+             height="38"
+             class=" fill-black"
+             viewBox="0 0 256 114"
+             aria-hidden="true"
+           >
+             <path
+               d="M255.12 56.69C255.12 25.38 229.74 0 198.43 0C167.12 0 141.74 25.38 141.74 56.69H198.43L141.74 113.38H255.13V85.03H226.78L255.13 56.68L255.12 56.69Z"
+             ></path>
+             <path
+               d="M93.54 28.35L74.41 0H0L76.54 113.39L153.07 0H112.68L93.54 28.35Z"
+             ></path>
+           </svg>
+           <div class="prose-2xl font-bold tracking-wide leading-8">Guessing Comp - Walk This Way</div>
+        </div>
+      </div>
+    </header>
+    <div class="flex-grow mx-auto flex flex-row px-4 pb-12 space-x-4">
+      <div class="w-1/2 flex flex-col justify-around">
+         <img class="w-full my-auto" src="/static/graph.png" alt="Video Stream" />
+      </div>
+      <div class="w-1/2 flex flex-col justify-around">
+
+        <img class="w-full my-auto" src="/video_feed" alt="Video Stream" />
+      </div>
+    </div>
+    <footer class="">
+      <div class="mx-auto text-center flex flex-col justify-center bg-black">
+        <div class="prose-2xl text-white py-8 font-extralight">V2 Digital is driven by outcomes, unleashed by technology and powered by humans.</div>
+      </div>
+    </footer>
+  </body>
+</html>
