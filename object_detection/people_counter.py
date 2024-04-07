@@ -22,24 +22,33 @@ from visualizers import ColorPalette
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
-overlay_image = cv2.imread(str(Path(__file__).resolve().parents[0] / 'AI.png'), -1) 
+overlay_image = cv2.imread(str(Path(__file__).resolve().parents[0] / 'AI.png'), -1)
+overlay_scale_factor = 0.5
 def draw_icon(frame, detections, output_transform):
     frame = output_transform.resize(frame)
 
     for detection in detections:
         class_id = int(detection.id)
-        if(class_id != 1):
+        if class_id != 1:
             continue
         xmin, ymin, xmax, ymax = detection.get_coords()
         xmin, ymin, xmax, ymax = output_transform.scale([xmin, ymin, xmax, ymax])
 
-        # Calculate the position to overlay the image
-        overlay_x = xmin + (xmax - xmin) // 2 - overlay_image.shape[1] // 2
-        overlay_y = ymin + (ymax - ymin) // 4 - overlay_image.shape[0] // 2
+        # Calculate the size of the bounding box
+        box_width = xmax - xmin
+        box_height = ymax - ymin
 
-        # Overlay the image
-        overlay_with_alpha(frame, overlay_image, (overlay_x, overlay_y))
+        # Scale the overlay image based on the bounding box size and scale_factor
+        scaled_overlay_width = int(box_width * overlay_scale_factor)
+        scaled_overlay_height = int(overlay_image.shape[0] * (scaled_overlay_width / overlay_image.shape[1]))
+        scaled_overlay_image = cv2.resize(overlay_image, (scaled_overlay_width, scaled_overlay_height))
 
+        # Calculate the position to overlay the scaled image
+        overlay_x = xmin + (box_width - scaled_overlay_width) // 2
+        overlay_y = ymin + (box_height - scaled_overlay_height) // 4
+
+        # Overlay the scaled image
+        overlay_with_alpha(frame, scaled_overlay_image, (overlay_x, ymin))
 
     return frame
 
@@ -61,7 +70,7 @@ def overlay_with_alpha(background, overlay, position):
 
     # Extract the alpha mask of the RGBA overlay, convert to RGB
     alpha_mask = overlay[overlay_y1:overlay_y2, overlay_x1:overlay_x2, 3] / 255.0
-    overlay_bgr = overlay[overlay_y1:overlay_y2, overlay_x1:overlay_x2, :3] 
+    overlay_bgr = overlay[overlay_y1:overlay_y2, overlay_x1:overlay_x2, :3]
 
     # Take the region of the background where the overlay will be placed
     background_region = background[y1:y2, x1:x2]

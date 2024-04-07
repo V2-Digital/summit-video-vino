@@ -6,7 +6,7 @@ from object_detection.people_counter import PeopleCounter
 from args import get_args
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 people_counter = PeopleCounter(get_args())
 
@@ -20,7 +20,7 @@ def frame_generator():
 
 @app.get("/video_feed")
 async def video_feed():
-    return StreamingResponse(frame_generator(), media_type="multipart/x-mixed-replace; boundary=frame")
+    return StreamingResponse(frame_generator(), media_type="multipart/x-mixed-replace; boundary=frame") 
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
