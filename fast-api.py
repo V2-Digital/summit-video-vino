@@ -15,8 +15,6 @@ def frame_generator():
         frame = people_counter.get_latest_frame()
         if frame is not None:
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-        else:
-            print("Frame is None")
 
 @app.get("/video_feed")
 async def video_feed():

@@ -4,7 +4,7 @@ from pathlib import Path
 from time import perf_counter
 
 import cv2
-from queue import Queue
+from queue import Queue, Empty
 import threading
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'common/python'))
@@ -23,7 +23,8 @@ from visualizers import ColorPalette
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
 overlay_image = cv2.imread(str(Path(__file__).resolve().parents[0] / 'AI.png'), -1)
-overlay_scale_factor = 0.5
+overlay_scale_factor = 0.52 # The scale factor of the overlay image
+overlay_centre_offset = -35 # pixles between actual image centre and visual centre of gravity in the X axis
 def draw_icon(frame, detections, output_transform):
     frame = output_transform.resize(frame)
 
@@ -36,16 +37,16 @@ def draw_icon(frame, detections, output_transform):
 
         # Calculate the size of the bounding box
         box_width = xmax - xmin
-        box_height = ymax - ymin
 
         # Scale the overlay image based on the bounding box size and scale_factor
         scaled_overlay_width = int(box_width * overlay_scale_factor)
-        scaled_overlay_height = int(overlay_image.shape[0] * (scaled_overlay_width / overlay_image.shape[1]))
+        scale_dimension = scaled_overlay_width / overlay_image.shape[1]
+        scaled_overlay_height = int(overlay_image.shape[0] * scale_dimension)
         scaled_overlay_image = cv2.resize(overlay_image, (scaled_overlay_width, scaled_overlay_height))
+        centre_offset = int(overlay_centre_offset * scale_dimension)
 
         # Calculate the position to overlay the scaled image
-        overlay_x = xmin + (box_width - scaled_overlay_width) // 2
-        overlay_y = ymin + (box_height - scaled_overlay_height) // 4
+        overlay_x = xmin + (box_width - scaled_overlay_width) // 2 - centre_offset
 
         # Overlay the scaled image
         overlay_with_alpha(frame, scaled_overlay_image, (overlay_x, ymin))
@@ -111,7 +112,8 @@ class PeopleCounter:
 
         self.detector_pipeline = AsyncPipeline(self.model)
         self.palette = ColorPalette(len(self.model.labels) if self.model.labels else 100)
-
+        self.metrics = PerformanceMetrics()
+        self.render_metrics = PerformanceMetrics()
         self.frame_queue = Queue(maxsize=10)
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self.count)
@@ -120,7 +122,7 @@ class PeopleCounter:
     def get_latest_frame(self):
         try:
             return self.frame_queue.get(timeout=0.1)  # Adjust the timeout as needed
-        except queue.Empty:
+        except Empty:
             return None
     
     def stop(self):
@@ -135,8 +137,8 @@ class PeopleCounter:
         model = self.model
         detector_pipeline = self.detector_pipeline
         # palette = self.palette
-        # metrics = self.metrics
-        # render_metrics = self.render_metrics
+        metrics = self.metrics
+        render_metrics = self.render_metrics
         presenter = None
         output_transform = None
         cap = self.cap
@@ -160,8 +162,7 @@ class PeopleCounter:
         next_frame_id = 0
         next_frame_id_to_show = 0
         # palette = ColorPalette(len(model.labels) if model.labels else 100)
-        # metrics = PerformanceMetrics()
-        # render_metrics = PerformanceMetrics()
+        render_metrics = PerformanceMetrics()
         presenter = None
         output_transform = None
 
@@ -179,19 +180,16 @@ class PeopleCounter:
                     # print_raw_results(objects, model.labels, next_frame_id_to_show)
 
                 presenter.drawGraphs(frame)
-                # rendering_start_time = perf_counter()
+                rendering_start_time = perf_counter()
                 frame = draw_icon(frame, objects, output_transform)
-                # render_metrics.update(rendering_start_time)
-                # metrics.update(start_time, frame)
+                render_metrics.update(rendering_start_time)
+                metrics.update(start_time, frame)
                 (flag, encodedImage) = cv2.imencode(".jpg", frame) 
 
                 next_frame_id_to_show += 1
 
                 if not self.frame_queue.full():
                     self.frame_queue.put(bytearray(encodedImage))
-                    log.info('Frame #{} processed'.format(next_frame_id_to_show))
-                else:
-                    log.warning('Frame queue is full')
                 continue
 
             if detector_pipeline.is_ready():
