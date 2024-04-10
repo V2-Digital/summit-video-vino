@@ -1,3 +1,4 @@
+import cv2
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,8 +14,9 @@ people_counter = PeopleCounter(get_args())
 def frame_generator():
     while True:
         frame = people_counter.get_latest_frame()
+        (flag, encodedImage) = cv2.imencode(".jpg", frame) 
         if frame is not None:
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
 
 @app.get("/video_feed")
 async def video_feed():

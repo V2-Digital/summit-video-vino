@@ -27,6 +27,7 @@ overlay_scale_factor = 0.52 # The scale factor of the overlay image
 overlay_centre_offset = -35 # pixles between actual image centre and visual centre of gravity in the X axis
 def draw_icon(frame, detections, output_transform):
     frame = output_transform.resize(frame)
+    frame_height = frame.shape[0] 
 
     for detection in detections:
         class_id = int(detection.id)
@@ -42,6 +43,11 @@ def draw_icon(frame, detections, output_transform):
         scaled_overlay_width = int(box_width * overlay_scale_factor)
         scale_dimension = scaled_overlay_width / overlay_image.shape[1]
         scaled_overlay_height = int(overlay_image.shape[0] * scale_dimension)
+
+        # Check if the scaled icon's height is greater than 50% of the frame's height
+        if scaled_overlay_height > 0.75 * frame_height:
+            continue  # Skip this detection
+
         scaled_overlay_image = cv2.resize(overlay_image, (scaled_overlay_width, scaled_overlay_height))
         centre_offset = int(overlay_centre_offset * scale_dimension)
 
@@ -184,12 +190,12 @@ class PeopleCounter:
                 frame = draw_icon(frame, objects, output_transform)
                 render_metrics.update(rendering_start_time)
                 metrics.update(start_time, frame)
-                (flag, encodedImage) = cv2.imencode(".jpg", frame) 
+                
 
                 next_frame_id_to_show += 1
 
                 if not self.frame_queue.full():
-                    self.frame_queue.put(bytearray(encodedImage))
+                    self.frame_queue.put(frame)
                 continue
 
             if detector_pipeline.is_ready():
