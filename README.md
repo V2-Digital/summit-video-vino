@@ -13,5 +13,3 @@ pip install -r ./requirements.txt
 ```
 
 Then visit http://localhost:5001 for a demo.
-
-It doesnt do any counting.
