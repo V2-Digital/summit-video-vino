@@ -14,8 +14,8 @@ people_counter = PeopleCounter(get_args())
 def frame_generator():
     while True:
         frame = people_counter.get_latest_frame()
-        (flag, encodedImage) = cv2.imencode(".jpg", frame) 
         if frame is not None:
+            (flag, encodedImage) = cv2.imencode(".jpg", frame) 
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
 
 @app.get("/video_feed")
